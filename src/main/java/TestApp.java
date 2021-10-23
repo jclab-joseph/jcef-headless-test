@@ -1,43 +1,67 @@
-import kr.jclab.wmbs.cef.VirtualScreenCefClient;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.CefSettings;
 import org.cef.browser.CefBrowser;
+import org.cef.browser.CefBrowserHeadless;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 
 public class TestApp {
+    public static class MyHeadlessBrowser extends CefBrowserHeadless {
+        private final JFrame frame = new JFrame();
+
+        public MyHeadlessBrowser(CefClient client) {
+            super(client, "https://webglsamples.org/aquarium/aquarium.html", false, null);
+            browser_rect_.setSize(500, 500);
+            frame.setSize(500, 500);
+            frame.setVisible(true);
+        }
+
+        @Override
+        public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height) {
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            IntBuffer intBuf = buffer
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .asIntBuffer();
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    image.setRGB(x, y, intBuf.get());
+                }
+            }
+//            try {
+//                ImageIO.write(image, "png", new File("image.png"));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+
+            frame.getGraphics().drawImage(image, 0, 0, width, height, null);
+            System.out.println(String.format("onPaint %dx%d", width, height));
+        }
+    }
     public static void main(String[] args) throws InterruptedException {
         // Perform startup initialization on platforms that require it.
-        List<String> argList = new ArrayList<>();
-        for (String a : args) argList.add(a);
-        argList.addAll(Arrays.asList(
-                "--off-screen-rendering-enabled",
-                "--disable-gpu",
-                "--enable-logging=stderr"
-        ));
-        if (!CefApp.startup(argList.toArray(new String[0]))) {
+        if (!CefApp.startup(args)) {
             System.out.println("Startup initialization failed!");
             return;
         }
 
         CefSettings settings = new CefSettings();
-        settings.log_severity = CefSettings.LogSeverity.LOGSEVERITY_VERBOSE;
-//        settings.log_file = ""
         settings.windowless_rendering_enabled = true;
-        settings.remote_debugging_port = 9987;
-        settings.log_file = "aa.txt";
         CefApp cefApp = CefApp.getInstance(settings);
-        VirtualScreenCefClient cefClient = cefApp.createClient(new VirtualScreenCefClient());
-        CefBrowser cefBrowser = cefClient.createBrowser("https://google.com", true, false);
+        CefClient cefClient = cefApp.createClient();
+        CefBrowser cefBrowser = new MyHeadlessBrowser(cefClient);
         cefBrowser.createImmediately();
         while(true) {
             System.out.println("loading = " + cefBrowser.isLoading());
             Thread.sleep(1000);
         }
-
     }
 }
