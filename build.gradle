@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+}
+
+group 'kr.jclab.test'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+
+    implementation files(
+            'lib/jogl-all-noawt.jar',
+            'lib/jogl-all-noawt-natives-linux-amd64.jar',
+            'lib/jogl-all-noawt-natives-windows-amd64.jar',
+            'lib/gluegen-rt.jar',
+            'lib/gluegen-rt-natives-linux-amd64.jar',
+            'lib/gluegen-rt-natives-windows-amd64.jar'
+    )
+}
+
+test {
+    useJUnitPlatform()
+}
